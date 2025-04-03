@@ -44,21 +44,21 @@ export default function Sidebar() {
           {expandedWorkspace && (
             <div className="ml-6 mt-2 space-y-4">
               <Link 
-                href="/agent/1" 
+                href="/protected/agent/1" 
                 className={`flex items-center gap-2 p-2 rounded-lg ${
-                  pathname === "/agent/1" ? "bg-[#231F20] text-white" : "hover:bg-gray-200"
+                  pathname === "/protected/agent/1" ? "bg-[#231F20] text-white" : "hover:bg-gray-200"
                 }`}
               >
-                <div className={`w-2 h-2 rounded-full ${pathname === "/agent/1" ? "bg-white" : "bg-black"}`}></div>
+                <div className={`w-2 h-2 rounded-full ${pathname === "/protected/agent/1" ? "bg-white" : "bg-black"}`}></div>
                 <span>Agent 1</span>
               </Link>
               <Link 
-                href="/agent/2" 
+                href="/protected/agent/2" 
                 className={`flex items-center gap-2 p-2 rounded-lg ${
-                  pathname === "/agent/2" ? "bg-[#231F20] text-white" : "hover:bg-gray-200"
+                  pathname === "/protected/agent/2" ? "bg-[#231F20] text-white" : "hover:bg-gray-200"
                 }`}
               >
-                <div className={`w-2 h-2 rounded-full ${pathname === "/agent/2" ? "bg-white" : "bg-black"}`}></div>
+                <div className={`w-2 h-2 rounded-full ${pathname === "/protected/agent/2" ? "bg-white" : "bg-black"}`}></div>
                 <span>Agent 2</span>
               </Link>
             </div>
