@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Linkedin, Building, Phone, Mail, User, MapPin, 
   Search, Filter, Plus, ExternalLink, MoreHorizontal 
@@ -21,10 +21,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+import { createClient } from "@/utils/supabase/client";
 
-export default function LeadDatabase({ leads }: { leads: Lead[] }) {
+export default function LeadDatabase({ leads: initialLeads }: { leads: Lead[] }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [leads, setLeads] = useState<Lead[]>(initialLeads);
   
   // Filter leads based on search term
   const filteredLeads = leads.filter(lead => {
@@ -44,6 +46,48 @@ export default function LeadDatabase({ leads }: { leads: Lead[] }) {
       window.open(formattedUrl, '_blank');
     }
   };
+
+  // Add this function to transform database records to the expected format
+  function transformDatabaseLeads(dbLeads: any[]): Lead[] {
+    return dbLeads.map(lead => ({
+      id: lead.id,
+      name: lead.name,
+      title: lead.title,
+      company: lead.company,
+      location: lead.location,
+      email: lead.email,
+      phone: lead.phone,
+      linkedinUrl: lead.linkedin_url,
+      tags: lead.tags || [],
+      matchScore: lead.match_score,
+      status: lead.status,
+      bio: lead.bio,
+      skills: lead.skills,
+      industry: lead.industry,
+      companySize: lead.company_size,
+      companyWebsite: lead.company_website,
+      companyLinkedin: lead.company_linkedin,
+      companyRevenue: lead.company_revenue
+    }));
+  }
+
+  // Then use this function when fetching leads from the database
+  useEffect(() => {
+    async function fetchLeads() {
+      const supabase = createClient();
+      const { data, error } = await supabase.from('leads').select('*');
+      if (error) {
+        console.error('Error fetching leads:', error);
+        return;
+      }
+      
+      // Transform the database records to the expected format
+      const transformedLeads = transformDatabaseLeads(data);
+      setLeads(transformedLeads);
+    }
+    
+    fetchLeads();
+  }, []);
 
   return (
     <div className="space-y-6">

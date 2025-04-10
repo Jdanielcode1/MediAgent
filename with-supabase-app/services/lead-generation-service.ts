@@ -502,7 +502,7 @@ export class LeadGenerationService {
             phone: lead.phone,
             linkedin_url: lead.linkedinUrl,
             tags: lead.tags,
-            match_score: lead.matchScore,
+            match_score: lead.matchScore, // Make sure this is saved
             status: 'new',
             bio: lead.bio,
             skills: lead.skills,
@@ -511,7 +511,7 @@ export class LeadGenerationService {
             company_website: lead.companyWebsite,
             company_linkedin: lead.companyLinkedin,
             company_revenue: lead.companyRevenue,
-            agent_id: null, // This will be assigned to the current agent
+            agent_id: null,
             created_at: new Date().toISOString()
           }
         ]);

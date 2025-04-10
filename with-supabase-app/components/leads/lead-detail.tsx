@@ -63,9 +63,11 @@ your.email@mediagent.com
             </Button>
           </Link>
           <h1 className="text-2xl font-bold">{lead.name}</h1>
-          <Badge variant="outline" className="bg-green-100 text-green-800 ml-2">
-            {lead.matchScore}% match
-          </Badge>
+          {lead.matchScore && (
+            <span className="inline-block px-2 py-1 bg-green-100 text-green-800 rounded-md text-sm font-medium">
+              {lead.matchScore}% match
+            </span>
+          )}
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" className="gap-2">
