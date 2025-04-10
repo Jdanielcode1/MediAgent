@@ -77,7 +77,12 @@ export default function Sidebar({ agents = [] }: { agents?: Agent[] }) {
       </div>
       
       <div className="p-4 border-t border-gray-200">
-        <Link href="/settings" className="flex items-center gap-2">
+        <Link 
+          href="/protected/settings" 
+          className={`flex items-center gap-2 p-2 rounded-lg ${
+            pathname === "/protected/settings" ? "bg-[#231F20] text-white" : "hover:bg-gray-200"
+          }`}
+        >
           <Settings size={20} />
           <span>Settings</span>
         </Link>

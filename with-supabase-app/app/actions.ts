@@ -132,3 +132,70 @@ export const signOutAction = async () => {
   await supabase.auth.signOut();
   return redirect("/sign-in");
 };
+
+export const updateCompanyProfileAction = async (formData: FormData) => {
+  const supabase = await createClient();
+  
+  // Get the current user
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    return encodedRedirect("error", "/sign-in", "You must be logged in");
+  }
+  
+  // Extract form data
+  const companyName = formData.get("company_name")?.toString();
+  const companyWebsite = formData.get("company_website")?.toString();
+  const companyAddress = formData.get("company_address")?.toString();
+  const companyPhone = formData.get("company_phone")?.toString();
+  const companyEmail = formData.get("company_email")?.toString();
+  const industry = formData.get("industry")?.toString();
+  
+  // Check if a company profile already exists for this user
+  const { data: existingProfile } = await supabase
+    .from('company_profiles')
+    .select('id')
+    .eq('user_id', user.id)
+    .single();
+  
+  if (existingProfile) {
+    // Update existing profile
+    const { error } = await supabase
+      .from('company_profiles')
+      .update({
+        company_name: companyName,
+        company_website: companyWebsite,
+        company_address: companyAddress,
+        company_phone: companyPhone,
+        company_email: companyEmail,
+        industry: industry,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', existingProfile.id);
+    
+    if (error) {
+      console.error("Error updating company profile:", error);
+      return encodedRedirect("error", "/protected/settings", "Failed to update company profile");
+    }
+  } else {
+    // Create new profile
+    const { error } = await supabase
+      .from('company_profiles')
+      .insert({
+        user_id: user.id,
+        company_name: companyName,
+        company_website: companyWebsite,
+        company_address: companyAddress,
+        company_phone: companyPhone,
+        company_email: companyEmail,
+        industry: industry,
+      });
+    
+    if (error) {
+      console.error("Error creating company profile:", error);
+      return encodedRedirect("error", "/protected/settings", "Failed to create company profile");
+    }
+  }
+  
+  return encodedRedirect("success", "/protected/settings", "Company profile updated successfully");
+};
