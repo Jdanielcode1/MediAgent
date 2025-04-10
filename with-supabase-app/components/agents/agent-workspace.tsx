@@ -10,6 +10,8 @@ import { LeadGenerationService } from "@/services/lead-generation-service";
 import { Lead } from "@/lib/types/lead-types";
 import SearchStageIndicator from "./search-stage-indicator";
 import FileDatabase from "./file-database";
+import MeetingsView from "./meetings-view";
+import CreateLeadForm from "./create-lead-form";
 
 // Define a proper type for the agent
 interface Agent {
@@ -24,7 +26,7 @@ export default function AgentWorkspace({ agent }: { agent: Agent }) {
   const [searchStage, setSearchStage] = useState<string>("");
   const [showResults, setShowResults] = useState(false);
   const [leads, setLeads] = useState<Lead[]>([]);
-  const [activeView, setActiveView] = useState<string>("search"); // search, database
+  const [activeView, setActiveView] = useState<string>("search"); // search, database, meetings, createLead
   
   const leadService = new LeadGenerationService();
   
@@ -79,22 +81,25 @@ export default function AgentWorkspace({ agent }: { agent: Agent }) {
         <span>Agent {agent.id.substring(0, 8)}</span>
       </div>
 
-      {/* Header with action buttons */}
+      {/* Header with agent info */}
       <div className="mb-6">
         <AgentHeader agent={agent} />
         
+        {/* Action buttons - moved from AgentHeader to here */}
         <div className="mt-4 flex gap-2">
           <Button 
-            variant="outline" 
+            variant={activeView === "createLead" ? "default" : "outline"} 
             className="gap-2"
+            onClick={() => handleViewChange("createLead")}
           >
             <Plus size={16} />
             <span>Create New Lead</span>
           </Button>
           
           <Button 
-            variant="outline" 
+            variant={activeView === "meetings" ? "default" : "outline"} 
             className="gap-2"
+            onClick={() => handleViewChange("meetings")}
           >
             <Calendar size={16} />
             <span>Meetings</span>
@@ -149,6 +154,8 @@ export default function AgentWorkspace({ agent }: { agent: Agent }) {
         )}
         
         {activeView === "database" && <FileDatabase agentId={agent.id} />}
+        {activeView === "meetings" && <MeetingsView agentId={agent.id} />}
+        {activeView === "createLead" && <CreateLeadForm agentId={agent.id} />}
       </div>
     </div>
   );
