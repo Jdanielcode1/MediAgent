@@ -1,46 +1,53 @@
 "use client";
 
-import { MoreVertical } from "lucide-react";
+import { MoreVertical, TrendingUp, TrendingDown, DollarSign } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { Bar } from "react-chartjs-2";
+import { Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
-  BarElement,
+  PointElement,
+  LineElement,
+  Title,
   Tooltip,
-} from "chart.js";
+  Legend,
+} from 'chart.js';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip);
+// Register ChartJS components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 export default function RevenueForecast({ revenue }: { revenue: any[] }) {
-  // Prepare chart data
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const currentMonth = new Date().getMonth();
-  
-  // Get the last 9 months of data
-  const labels = [];
-  for (let i = 0; i < 9; i++) {
-    const monthIndex = (currentMonth - 8 + i + 12) % 12;
-    labels.push(months[monthIndex]);
-  }
-  
-  // Map revenue data to months
-  const revenueData = labels.map(month => {
-    const monthData = revenue.find((r: any) => r.month === month);
-    return monthData ? monthData.amount : 0;
-  });
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'];
   
   const data = {
-    labels,
+    labels: months,
     datasets: [
       {
-        data: revenueData,
-        backgroundColor: "#7E57C2", // Purple
-        borderRadius: 6,
-        barThickness: 20,
+        label: 'Actual Revenue',
+        data: [30000, 35000, 40000, 45000, 50000, 60000, null, null, null],
+        borderColor: 'rgba(59, 130, 246, 1)',
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        tension: 0.3,
+        fill: true,
       },
+      {
+        label: 'Forecast',
+        data: [null, null, null, null, null, 60000, 70000, 75000, 80000],
+        borderColor: 'rgba(209, 213, 219, 1)',
+        backgroundColor: 'transparent',
+        borderDash: [5, 5],
+        tension: 0.3,
+      }
     ],
   };
   
@@ -48,58 +55,88 @@ export default function RevenueForecast({ revenue }: { revenue: any[] }) {
     responsive: true,
     plugins: {
       legend: {
-        display: false,
+        position: 'top' as const,
       },
-      tooltip: {
-        callbacks: {
-          label: function(context: any) {
-            return `$${context.raw.toLocaleString()}`;
-          }
-        }
-      }
     },
     scales: {
+      y: {
+        beginAtZero: true,
+        grid: {
+          display: true,
+          drawBorder: false,
+        },
+        ticks: {
+          callback: function(value: any) {
+            return '$' + value.toLocaleString();
+          }
+        }
+      },
       x: {
         grid: {
           display: false,
         },
       },
-      y: {
-        grid: {
-          display: true,
-        },
-        ticks: {
-          callback: function(value: any) {
-            return `$${value/1000}k`;
-          }
-        }
-      },
     },
   };
   
-  // Calculate summary statistics
-  const monthlyRevenue = revenue.reduce((sum, item) => sum + item.amount, 0) / revenue.length;
-  const closedDealsValue = revenue.reduce((sum, item) => sum + (item.closedDeals || 0), 0);
-  const targetGap = revenue[revenue.length - 1]?.targetGap || 0;
-  
   return (
-    <Card>
+    <Card className="shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-xl font-bold">Revenue Forecast</CardTitle>
+        <div>
+          <CardTitle className="text-xl font-bold">Revenue Forecast</CardTitle>
+          <p className="text-sm text-gray-500">WoundTrack Pro sales projection</p>
+        </div>
         <Button variant="ghost" size="icon">
           <MoreVertical className="h-4 w-4" />
         </Button>
       </CardHeader>
-      <CardContent className="flex flex-col md:flex-row gap-6">
-        <div className="flex-1">
-          <div className="h-64">
-            <Bar data={data} options={options} />
-          </div>
+      <CardContent>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <Card className="bg-blue-50 border-0">
+            <CardContent className="p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm text-gray-500">Monthly Revenue</div>
+                  <div className="text-xl font-bold">$60,000</div>
+                </div>
+                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                  <DollarSign className="h-4 w-4 text-blue-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-green-50 border-0">
+            <CardContent className="p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm text-gray-500">Q3 Projection</div>
+                  <div className="text-xl font-bold">$225,000</div>
+                </div>
+                <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+                  <TrendingUp className="h-4 w-4 text-green-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-amber-50 border-0">
+            <CardContent className="p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm text-gray-500">Annual Target</div>
+                  <div className="text-xl font-bold">$750,000</div>
+                </div>
+                <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
+                  <TrendingUp className="h-4 w-4 text-amber-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
-        <div className="space-y-4 min-w-48">
-          <div>Monthly Revenue this Month: ${monthlyRevenue.toLocaleString()}</div>
-          <div>Closed Deals Value: {closedDealsValue.toLocaleString()}</div>
-          <div>Amount Missing to Hit Month Target: {targetGap}</div>
+        
+        <div className="h-[250px]">
+          <Line data={data} options={options} />
         </div>
       </CardContent>
     </Card>

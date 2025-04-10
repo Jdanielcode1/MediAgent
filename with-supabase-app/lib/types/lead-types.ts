@@ -10,6 +10,7 @@ export interface Lead {
     linkedinUrl?: string;
     tags: string[];
     matchScore: number;
+    status?: string;
     // Additional fields from PDL/Clearbit
     bio?: string;
     skills?: string[];
