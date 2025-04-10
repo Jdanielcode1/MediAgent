@@ -5,7 +5,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutGrid, Settings, ChevronDown } from "lucide-react";
 
-export default function Sidebar({ agents = [] }: { agents?: any[] }) {
+interface Agent {
+  id: string;
+  name?: string;
+  [key: string]: any;
+}
+
+export default function Sidebar({ agents = [] }: { agents?: Agent[] }) {
   const [expandedWorkspace, setExpandedWorkspace] = useState(true);
   const pathname = usePathname();
   
@@ -52,7 +58,7 @@ export default function Sidebar({ agents = [] }: { agents?: any[] }) {
                   }`}
                 >
                   <div className={`w-2 h-2 rounded-full ${pathname === `/protected/agent/${agent.id}` ? "bg-white" : "bg-black"}`}></div>
-                  <span>Agent {agent.id.substring(0, 6)}</span>
+                  <span>{agent.name || `Agent ${agent.id.substring(0, 6)}`}</span>
                 </Link>
               ))}
             </div>

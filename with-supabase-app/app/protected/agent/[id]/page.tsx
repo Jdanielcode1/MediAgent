@@ -1,21 +1,21 @@
 import { createClient } from "@/utils/supabase/server";
 import AgentWorkspace from "@/components/agents/agent-workspace";
+import AgentNotFound from "@/components/agents/agent-not-found";
 
 // Define the correct type for the page props
 type AgentPageProps = {
-  params: {
-    id: string;
-  };
-  searchParams?: { [key: string]: string | string[] | undefined };
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 };
 
-export default async function Page({ params }: AgentPageProps) {
-  // Ensure we're working with the id after params is resolved
-  const id = params.id;
+export default async function AgentPage({ params }: AgentPageProps) {
+  // Await the params Promise to get the actual values
+  const resolvedParams = await params;
+  const id = resolvedParams.id;
   
   const supabase = await createClient();
   
-  // Fetch agent data - this query works the same for UUID
+  // Fetch agent data
   const { data: agent } = await supabase
     .from('agents')
     .select('*')
@@ -23,14 +23,7 @@ export default async function Page({ params }: AgentPageProps) {
     .single();
 
   if (!agent) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900">Agent Not Found</h1>
-          <p className="mt-2 text-gray-600">The agent you're looking for doesn't exist or you don't have access.</p>
-        </div>
-      </div>
-    );
+    return <AgentNotFound />;
   }
 
   return <AgentWorkspace agent={agent} />;

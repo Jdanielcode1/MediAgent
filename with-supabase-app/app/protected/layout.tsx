@@ -22,10 +22,10 @@ export default async function RootLayout({
 }>) {
   const supabase = await createClient();
   
-  // Fetch agents data for sidebar
+  // Fetch agents data for sidebar with names
   const { data: agents } = await supabase
     .from('agents')
-    .select('id');
+    .select('id, name');
 
   return (
     <html lang="en" className={geistSans.className} suppressHydrationWarning>

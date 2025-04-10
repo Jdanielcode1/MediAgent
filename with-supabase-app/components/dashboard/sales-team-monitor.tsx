@@ -3,7 +3,17 @@ import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import Link from "next/link";
 
-export default function SalesTeamMonitor({ agents }: { agents: any[] }) {
+interface Agent {
+  id: string;
+  name?: string;
+  isTopPerformer?: boolean;
+  activeLeads?: number;
+  pipelineValue?: number;
+  todaysMeetings?: number;
+  lastActivity?: string;
+}
+
+export default function SalesTeamMonitor({ agents }: { agents: Agent[] }) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -16,7 +26,7 @@ export default function SalesTeamMonitor({ agents }: { agents: any[] }) {
         {agents.map((agent) => (
           <div key={agent.id} className="space-y-2">
             <div className="flex items-center justify-between">
-              <h3 className="font-medium">Agent {agent.id.substring(0, 8)}</h3>
+              <h3 className="font-medium">{agent.name || `Agent ${agent.id.substring(0, 8)}`}</h3>
               <Link href={`/protected/agent/${agent.id}`}>
                 <Button variant="secondary" className="h-8 rounded-md bg-blue-400 text-white">
                   View
