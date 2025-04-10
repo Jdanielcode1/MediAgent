@@ -21,7 +21,6 @@ export class LeadGenerationService {
       
       try {
         // Generate mock people based on the original query
-        // We don't need to pass keywords here since generateMockPerson will get them
         const leads = await this.generateMockPerson(searchParams.query);
         
         // Save leads to Supabase
@@ -250,63 +249,144 @@ export class LeadGenerationService {
         return null;
       }
       
-      // Prepare parameters for enrichment
-      const params = new URLSearchParams();
-      if (lead.email) params.append('email', lead.email);
-      if (lead.linkedin_url) params.append('linkedin', lead.linkedin_url);
-      if (lead.name && lead.company) {
-        params.append('name', lead.name);
-        params.append('company', lead.company);
-      }
-      
-      // Call the enrichment API
-      const response = await fetch(`/api/lead-generation/person-enrich?${params.toString()}`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to enrich lead');
-      }
-      
-      const enrichedData = await response.json();
-      
-      // Update the lead in the database with enriched data
-      if (enrichedData.data) {
-        const { error: updateError } = await this.supabase
-          .from('leads')
-          .update({
-            bio: enrichedData.data.bio,
-            skills: enrichedData.data.skills,
-            industry: enrichedData.data.job_company_industry,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', leadId);
-        
-        if (updateError) {
-          console.error('Error updating lead with enriched data:', updateError);
+      try {
+        // Prepare parameters for enrichment
+        const params = new URLSearchParams();
+        if (lead.email) params.append('email', lead.email);
+        if (lead.linkedin_url) params.append('linkedin', lead.linkedin_url);
+        if (lead.name && lead.company) {
+          params.append('name', lead.name);
+          params.append('company', lead.company);
         }
+        
+        // Call the enrichment API
+        const response = await fetch(`/api/lead-generation/person-enrich?${params.toString()}`);
+        
+        if (!response.ok) {
+          console.warn('Enrichment API returned an error, using mock enrichment data');
+          // Instead of throwing, we'll use mock data
+          return this.generateMockEnrichment(lead);
+        }
+        
+        const enrichedData = await response.json();
+        
+        // Update the lead in the database with enriched data
+        if (enrichedData.data) {
+          const { error: updateError } = await this.supabase
+            .from('leads')
+            .update({
+              bio: enrichedData.data.bio,
+              skills: enrichedData.data.skills,
+              industry: enrichedData.data.job_company_industry,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', leadId);
+          
+          if (updateError) {
+            console.error('Error updating lead with enriched data:', updateError);
+          }
+        }
+        
+        // Return the enriched lead
+        return {
+          ...lead,
+          bio: enrichedData.data?.bio,
+          skills: enrichedData.data?.skills,
+          industry: enrichedData.data?.job_company_industry,
+          // Transform other fields as needed
+          id: lead.id,
+          name: lead.name,
+          title: lead.title,
+          company: lead.company,
+          location: lead.location,
+          email: lead.email,
+          phone: lead.phone,
+          linkedinUrl: lead.linkedin_url,
+          tags: lead.tags,
+          matchScore: lead.match_score
+        };
+      } catch (apiError) {
+        console.error('API error during enrichment:', apiError);
+        // Fall back to mock enrichment
+        return this.generateMockEnrichment(lead);
       }
-      
-      // Return the enriched lead
-      return {
-        ...lead,
-        bio: enrichedData.data?.bio,
-        skills: enrichedData.data?.skills,
-        industry: enrichedData.data?.job_company_industry,
-        // Transform other fields as needed
-        id: lead.id,
-        name: lead.name,
-        title: lead.title,
-        company: lead.company,
-        location: lead.location,
-        email: lead.email,
-        phone: lead.phone,
-        linkedinUrl: lead.linkedin_url,
-        tags: lead.tags,
-        matchScore: lead.match_score
-      };
     } catch (error) {
       console.error('Error enriching lead:', error);
       return null;
     }
+  }
+
+  // Add this new method to generate mock enrichment data
+  private generateMockEnrichment(lead: any): Lead {
+    // Create plausible mock data based on the lead's existing information
+    const industry = lead.industry || this.inferIndustry(lead.company, lead.title);
+    const skills = this.generateSkillsForRole(lead.title, industry);
+    const bio = this.generateBio(lead.name, lead.title, lead.company, industry);
+    
+    return {
+      ...lead,
+      id: lead.id,
+      name: lead.name,
+      title: lead.title,
+      company: lead.company,
+      location: lead.location,
+      email: lead.email,
+      phone: lead.phone,
+      linkedinUrl: lead.linkedin_url,
+      tags: lead.tags,
+      matchScore: lead.match_score,
+      // Add enriched data
+      bio,
+      skills,
+      industry
+    };
+  }
+
+  private inferIndustry(company: string, title: string): string {
+    // Simple logic to guess industry from company name or title
+    const companyLower = company.toLowerCase();
+    const titleLower = title.toLowerCase();
+    
+    if (companyLower.includes('hospital') || companyLower.includes('health') || 
+        companyLower.includes('medical') || companyLower.includes('care')) {
+      return 'Healthcare';
+    }
+    
+    if (titleLower.includes('nurse') || titleLower.includes('doctor') || 
+        titleLower.includes('physician') || titleLower.includes('medical')) {
+      return 'Healthcare';
+    }
+    
+    return 'Unknown Industry';
+  }
+
+  private generateSkillsForRole(title: string, industry: string): string[] {
+    const titleLower = title.toLowerCase();
+    
+    if (industry === 'Healthcare') {
+      if (titleLower.includes('nurse') || titleLower.includes('nursing')) {
+        return ['Patient Care', 'Medical Records', 'Clinical Procedures', 'Healthcare Management', 'Team Leadership'];
+      }
+      
+      if (titleLower.includes('director')) {
+        return ['Healthcare Administration', 'Staff Management', 'Budget Planning', 'Regulatory Compliance', 'Strategic Planning'];
+      }
+      
+      return ['Healthcare', 'Patient Advocacy', 'Medical Protocols', 'Team Collaboration', 'Quality Improvement'];
+    }
+    
+    // Default skills for any professional
+    return ['Leadership', 'Communication', 'Project Management', 'Strategic Planning', 'Team Building'];
+  }
+
+  private generateBio(name: string, title: string, company: string, industry: string): string {
+    const firstName = name.split(' ')[0];
+    
+    if (industry === 'Healthcare') {
+      return `${firstName} is a seasoned ${title} at ${company} with extensive experience in the healthcare industry. They are known for their commitment to quality patient care and operational excellence.`;
+    }
+    
+    return `${firstName} is an experienced ${title} at ${company} with a track record of success in their field. They are passionate about driving innovation and achieving results.`;
   }
 
   async parseQueryWithNLP(query: string): Promise<any> {
@@ -373,6 +453,32 @@ export class LeadGenerationService {
       return this.transformToLeads(result.data || [], [], keywords);
     } catch (error) {
       console.error('Error generating mock person:', error);
+      throw error;
+    }
+  }
+
+  async generateEmail(lead: Lead, context?: string): Promise<string> {
+    try {
+      console.log('Generating email for lead:', lead.name);
+      
+      const response = await fetch('/api/generate-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ lead, context })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to generate email');
+      }
+      
+      const result = await response.json();
+      console.log('Generated email result:', result);
+      
+      return result.email || '';
+    } catch (error) {
+      console.error('Error generating email:', error);
       throw error;
     }
   }

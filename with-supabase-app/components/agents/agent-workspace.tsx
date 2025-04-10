@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { Calendar, Database, Plus, Trash2, Search } from "lucide-react";
+import { useState } from "react";
+import { Calendar, Database, Plus, Search } from "lucide-react";
 import { Button } from "../ui/button";
+import { Input } from "../ui/input";
 import LeadResults from "./lead-results";
-import AgentHeader from "./agent-header"
-import SearchInterface from "./search-interface"
+import AgentHeader from "./agent-header";
 import { LeadGenerationService } from "@/services/lead-generation-service";
 import { Lead } from "@/lib/types/lead-types";
-import QueryAnalyzer from "./query-analyzer";
+import SearchStageIndicator from "./search-stage-indicator";
+import FileDatabase from "./file-database";
 
 // Define a proper type for the agent
 interface Agent {
@@ -20,31 +21,26 @@ interface Agent {
 export default function AgentWorkspace({ agent }: { agent: Agent }) {
   const [query, setQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
+  const [searchStage, setSearchStage] = useState<string>("");
   const [showResults, setShowResults] = useState(false);
-  const [searchStage, setSearchStage] = useState<"idle" | "searching" | "analyzing" | "complete">("idle");
   const [leads, setLeads] = useState<Lead[]>([]);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [activeView, setActiveView] = useState<string>("search"); // search, database
+  
   const leadService = new LeadGenerationService();
-
-  // Auto-resize textarea as content grows
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = textareaRef.current.scrollHeight + "px";
-    }
-  }, [query]);
-
+  
   const handleSearch = async () => {
     if (!query.trim()) return;
     
     setIsSearching(true);
     setSearchStage("searching");
+    setShowResults(false); // Hide previous results while searching
+    setActiveView("search");
     
     try {
       // First stage: searching
       setTimeout(() => {
         setSearchStage("analyzing");
-      }, 2000);
+      }, 1500);
       
       // Perform the actual search
       const results = await leadService.searchLeads({ query });
@@ -55,21 +51,25 @@ export default function AgentWorkspace({ agent }: { agent: Agent }) {
         setSearchStage("complete");
         setIsSearching(false);
         setShowResults(true);
-      }, 2000);
+      }, 1500);
     } catch (error) {
-      console.error("Error searching for leads:", error);
+      console.error("Error searching leads:", error);
       setIsSearching(false);
-      // Show error message to user
+      setSearchStage("error");
     }
   };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSearch();
+  
+  const handleViewChange = (view: string) => {
+    setActiveView(view);
+    // Hide search results when switching views
+    if (view !== "search") {
+      setShowResults(false);
+    } else if (leads.length > 0) {
+      // Show results again if we have them and we're switching back to search
+      setShowResults(true);
     }
   };
-
+  
   return (
     <div className="flex flex-col h-full">
       {/* Breadcrumb */}
@@ -79,64 +79,76 @@ export default function AgentWorkspace({ agent }: { agent: Agent }) {
         <span>Agent {agent.id.substring(0, 8)}</span>
       </div>
 
-      {/* Header */}
-      <AgentHeader agent={agent} />
+      {/* Header with action buttons */}
+      <div className="mb-6">
+        <AgentHeader agent={agent} />
+        
+        <div className="mt-4 flex gap-2">
+          <Button 
+            variant="outline" 
+            className="gap-2"
+          >
+            <Plus size={16} />
+            <span>Create New Lead</span>
+          </Button>
+          
+          <Button 
+            variant="outline" 
+            className="gap-2"
+          >
+            <Calendar size={16} />
+            <span>Meetings</span>
+          </Button>
+          
+          <Button 
+            variant={activeView === "database" ? "default" : "outline"} 
+            className="gap-2"
+            onClick={() => handleViewChange("database")}
+          >
+            <Database size={16} />
+            <span>Knowledge Base</span>
+          </Button>
+        </div>
+      </div>
 
       {/* Main content */}
       <div className="flex-1 space-y-6">
-        <SearchInterface 
-          query={query}
-          setQuery={setQuery}
-          textareaRef={textareaRef as React.RefObject<HTMLTextAreaElement>}
-          handleKeyDown={handleKeyDown}
-          isSearching={isSearching}
-          showResults={showResults}
-        />
-        
-        <QueryAnalyzer query={query} isSearching={isSearching} />
-
-        {/* Loading indicator with stages */}
-        {isSearching && (
-          <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
-              <span className="text-sm">🔍</span>
+        {activeView === "search" && (
+          <>
+            <div className="space-y-2">
+              <h2 className="text-xl font-semibold">Who are you looking to reach out today?</h2>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="e.g., Find nursing directors in Mississippi"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                  className="flex-1"
+                />
+                <Button onClick={handleSearch} disabled={isSearching || !query.trim()}>
+                  <Search className="h-4 w-4 mr-2" />
+                  Search
+                </Button>
+              </div>
             </div>
             
-            <div className="flex-1">
-              <p className="text-lg mb-2">
-                {searchStage === "searching" && "Searching for your ideal leads based on input..."}
-                {searchStage === "analyzing" && "Analyzing potential matches and qualifying leads..."}
-              </p>
-              
-              <div className="flex items-center gap-2">
-                <div className={`w-4 h-4 rounded-full ${searchStage === "searching" ? "bg-blue-500" : "bg-gray-300"} animate-pulse`}></div>
-                <div className={`w-4 h-4 rounded-full ${searchStage === "analyzing" ? "bg-blue-500" : "bg-gray-300"} animate-pulse`} style={{ animationDelay: "0.2s" }}></div>
-                <div className={`w-4 h-4 rounded-full ${searchStage === "complete" ? "bg-blue-500" : "bg-gray-300"} animate-pulse`} style={{ animationDelay: "0.4s" }}></div>
-              </div>
-              
-              {searchStage === "searching" && (
-                <div className="mt-4 space-y-2">
-                  <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg bg-gray-50">
-                    <Search className="text-blue-600" size={20} />
-                    <span className="font-medium">Searching People Data Labs for medical decision makers...</span>
-                  </div>
-                </div>
-              )}
-              
-              {searchStage === "analyzing" && (
-                <div className="mt-4 space-y-2">
-                  <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg bg-gray-50">
-                    <Search className="text-green-600" size={20} />
-                    <span className="font-medium">Identifying Medicare-certified facilities with manual tracking systems...</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+            {/* Show the search stage indicator when searching */}
+            {(searchStage === "searching" || searchStage === "analyzing") && (
+              <SearchStageIndicator stage={searchStage} query={query} />
+            )}
+            
+            {/* Show results when search is complete */}
+            {showResults && (
+              <LeadResults 
+                query={query} 
+                customLeads={leads} 
+                searchStage={searchStage}
+              />
+            )}
+          </>
         )}
-
-        {/* Search results */}
-        {showResults && <LeadResults query={query} customLeads={leads} />}
+        
+        {activeView === "database" && <FileDatabase agentId={agent.id} />}
       </div>
     </div>
   );
