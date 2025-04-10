@@ -6,6 +6,9 @@ import { Button } from "../ui/button";
 import LeadResults from "./lead-results";
 import AgentHeader from "./agent-header"
 import SearchInterface from "./search-interface"
+import { LeadGenerationService } from "@/services/lead-generation-service";
+import { Lead } from "@/lib/types/lead-types";
+import QueryAnalyzer from "./query-analyzer";
 
 // Define a proper type for the agent
 interface Agent {
@@ -19,7 +22,9 @@ export default function AgentWorkspace({ agent }: { agent: Agent }) {
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [searchStage, setSearchStage] = useState<"idle" | "searching" | "analyzing" | "complete">("idle");
+  const [leads, setLeads] = useState<Lead[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const leadService = new LeadGenerationService();
 
   // Auto-resize textarea as content grows
   useEffect(() => {
@@ -29,22 +34,33 @@ export default function AgentWorkspace({ agent }: { agent: Agent }) {
     }
   }, [query]);
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     if (!query.trim()) return;
     
     setIsSearching(true);
     setSearchStage("searching");
     
-    // Simulate search stages
-    setTimeout(() => {
-      setSearchStage("analyzing");
-      
+    try {
+      // First stage: searching
       setTimeout(() => {
+        setSearchStage("analyzing");
+      }, 2000);
+      
+      // Perform the actual search
+      const results = await leadService.searchLeads({ query });
+      
+      // Second stage: analyzing
+      setTimeout(() => {
+        setLeads(results);
         setSearchStage("complete");
         setIsSearching(false);
         setShowResults(true);
       }, 2000);
-    }, 2000);
+    } catch (error) {
+      console.error("Error searching for leads:", error);
+      setIsSearching(false);
+      // Show error message to user
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -76,6 +92,8 @@ export default function AgentWorkspace({ agent }: { agent: Agent }) {
           isSearching={isSearching}
           showResults={showResults}
         />
+        
+        <QueryAnalyzer query={query} isSearching={isSearching} />
 
         {/* Loading indicator with stages */}
         {isSearching && (
@@ -100,7 +118,7 @@ export default function AgentWorkspace({ agent }: { agent: Agent }) {
                 <div className="mt-4 space-y-2">
                   <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg bg-gray-50">
                     <Search className="text-blue-600" size={20} />
-                    <span className="font-medium">Searching LinkedIn for wound care specialists & nursing directors...</span>
+                    <span className="font-medium">Searching People Data Labs for medical decision makers...</span>
                   </div>
                 </div>
               )}
@@ -118,7 +136,7 @@ export default function AgentWorkspace({ agent }: { agent: Agent }) {
         )}
 
         {/* Search results */}
-        {showResults && <LeadResults query={query} />}
+        {showResults && <LeadResults query={query} customLeads={leads} />}
       </div>
     </div>
   );

@@ -4,7 +4,9 @@ import { useState } from "react";
 import { Linkedin, Building, Phone, Mail, User, MapPin, ChevronRight } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
+import { LeadGenerationService } from "@/services/lead-generation-service";
 
+// Define Lead interface
 interface Lead {
   id: string;
   name: string;
@@ -16,8 +18,18 @@ interface Lead {
   linkedinUrl?: string;
   tags: string[];
   matchScore: number;
+  // Additional fields from PDL/Clearbit
+  bio?: string;
+  skills?: string[];
+  companySize?: string;
+  industry?: string;
+  companyWebsite?: string;
+  companyLinkedin?: string;
+  companyFounded?: number;
+  companyRevenue?: string;
 }
 
+// Keep the mockLeads for fallback
 const mockLeads: Lead[] = [
   {
     id: "1",
@@ -55,18 +67,41 @@ const mockLeads: Lead[] = [
   }
 ];
 
-export default function LeadResults({ query }: { query: string }) {
+export default function LeadResults({ 
+  query, 
+  customLeads 
+}: { 
+  query: string;
+  customLeads?: Lead[];
+}) {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [enrichedLead, setEnrichedLead] = useState<Lead | null>(null);
+  const leadService = new LeadGenerationService();
   
-  const handleContactLead = (lead: Lead) => {
+  // Use custom leads if provided, otherwise use mock leads
+  const leads = customLeads || mockLeads;
+  
+  const handleContactLead = async (lead: Lead) => {
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
+    
+    try {
+      // Enrich the lead with additional data
+      const enriched = await leadService.enrichLead(lead.id);
+      if (enriched) {
+        setEnrichedLead(enriched);
+      }
+      
       // Here you would typically update the lead status in your database
-      alert(`Contact initiated with ${lead.name}`);
-    }, 1500);
+      // For now, just show a success message
+      setTimeout(() => {
+        setIsLoading(false);
+        alert(`Contact initiated with ${lead.name}`);
+      }, 1500);
+    } catch (error) {
+      console.error("Error contacting lead:", error);
+      setIsLoading(false);
+    }
   };
   
   return (
@@ -77,91 +112,150 @@ export default function LeadResults({ query }: { query: string }) {
         </div>
         
         <div className="flex-1">
-          <h3 className="text-lg font-medium mb-4">Found {mockLeads.length} potential leads matching your criteria</h3>
+          <h3 className="text-lg font-medium mb-4">Found {leads.length} potential leads matching your criteria</h3>
           
-          <div className="grid grid-cols-1 gap-4">
-            {mockLeads.map((lead) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {leads.map((lead) => (
               <Card 
                 key={lead.id} 
-                className={`cursor-pointer hover:shadow-md transition-shadow ${
-                  selectedLead?.id === lead.id ? 'ring-2 ring-primary' : ''
-                }`}
+                className={`cursor-pointer hover:shadow-md transition-shadow ${selectedLead?.id === lead.id ? 'ring-2 ring-primary' : ''}`}
                 onClick={() => setSelectedLead(lead)}
               >
                 <CardContent className="p-4">
                   <div className="flex justify-between items-start">
-                    <div className="flex gap-3">
-                      <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
-                        <User size={24} className="text-gray-500" />
-                      </div>
-                      
-                      <div>
-                        <h4 className="font-medium">{lead.name}</h4>
-                        <p className="text-sm text-gray-600">{lead.title}</p>
-                        <div className="flex items-center text-sm text-gray-500 mt-1">
-                          <Building size={14} className="mr-1" />
-                          {lead.company}
-                        </div>
-                        <div className="flex items-center text-sm text-gray-500">
-                          <MapPin size={14} className="mr-1" />
-                          {lead.location}
-                        </div>
-                      </div>
+                    <div>
+                      <h4 className="font-medium">{lead.name}</h4>
+                      <p className="text-sm text-gray-600">{lead.title}</p>
+                      <p className="text-sm text-gray-600 flex items-center mt-1">
+                        <Building size={14} className="mr-1" />
+                        {lead.company}
+                      </p>
+                      <p className="text-sm text-gray-600 flex items-center mt-1">
+                        <MapPin size={14} className="mr-1" />
+                        {lead.location}
+                      </p>
                     </div>
-                    
-                    <div className="flex flex-col items-end">
-                      <div className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded">
-                        {lead.matchScore}% Match
-                      </div>
-                      <div className="flex mt-2 gap-2">
-                        {lead.linkedinUrl && (
-                          <a href={`https://${lead.linkedinUrl}`} target="_blank" rel="noopener noreferrer" className="text-blue-600">
-                            <Linkedin size={18} />
-                          </a>
-                        )}
-                        {lead.email && (
-                          <a href={`mailto:${lead.email}`} className="text-gray-600">
-                            <Mail size={18} />
-                          </a>
-                        )}
-                        {lead.phone && (
-                          <a href={`tel:${lead.phone}`} className="text-gray-600">
-                            <Phone size={18} />
-                          </a>
-                        )}
-                      </div>
+                    <div className="bg-gray-100 rounded-full px-2 py-1 text-xs font-medium">
+                      {lead.matchScore}% match
                     </div>
                   </div>
                   
-                  <div className="mt-3 flex flex-wrap gap-2">
+                  <div className="mt-3 flex flex-wrap gap-1">
                     {lead.tags.map((tag, index) => (
-                      <span key={index} className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">
+                      <span key={index} className="bg-blue-50 text-blue-700 text-xs px-2 py-1 rounded">
                         {tag}
                       </span>
                     ))}
                   </div>
-                  
-                  {selectedLead?.id === lead.id && (
-                    <div className="mt-4 pt-4 border-t border-gray-100">
-                      <div className="flex justify-between items-center">
-                        <div className="text-sm">
-                          <p>This lead matches your search criteria for wound care specialists with manual tracking systems.</p>
-                        </div>
-                        <Button 
-                          onClick={() => handleContactLead(lead)} 
-                          disabled={isLoading}
-                          className="flex items-center gap-1"
-                        >
-                          {isLoading ? 'Initiating...' : 'Contact Lead'}
-                          {!isLoading && <ChevronRight size={16} />}
-                        </Button>
-                      </div>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             ))}
           </div>
+          
+          {selectedLead && (
+            <div className="mt-6 border rounded-lg p-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="text-xl font-medium">{selectedLead.name}</h3>
+                  <p className="text-gray-600">{selectedLead.title} at {selectedLead.company}</p>
+                </div>
+                <div className="flex gap-2">
+                  {selectedLead.linkedinUrl && (
+                    <a 
+                      href={`https://${selectedLead.linkedinUrl}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-800"
+                    >
+                      <Linkedin size={20} />
+                    </a>
+                  )}
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div>
+                  <h4 className="font-medium mb-2">Contact Information</h4>
+                  <div className="space-y-2">
+                    {selectedLead.email && (
+                      <p className="text-sm flex items-center">
+                        <Mail size={16} className="mr-2 text-gray-500" />
+                        <a href={`mailto:${selectedLead.email}`} className="text-blue-600 hover:underline">
+                          {selectedLead.email}
+                        </a>
+                      </p>
+                    )}
+                    {selectedLead.phone && (
+                      <p className="text-sm flex items-center">
+                        <Phone size={16} className="mr-2 text-gray-500" />
+                        <a href={`tel:${selectedLead.phone}`} className="text-blue-600 hover:underline">
+                          {selectedLead.phone}
+                        </a>
+                      </p>
+                    )}
+                    {selectedLead.linkedinUrl && (
+                      <p className="text-sm flex items-center">
+                        <Linkedin size={16} className="mr-2 text-gray-500" />
+                        <a 
+                          href={`https://${selectedLead.linkedinUrl}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline"
+                        >
+                          {selectedLead.linkedinUrl}
+                        </a>
+                      </p>
+                    )}
+                  </div>
+                </div>
+                
+                <div>
+                  <h4 className="font-medium mb-2">Company Information</h4>
+                  <p className="text-sm">{selectedLead.company}</p>
+                  <p className="text-sm">{selectedLead.location}</p>
+                  {selectedLead.industry && (
+                    <p className="text-sm">Industry: {selectedLead.industry}</p>
+                  )}
+                  {selectedLead.companySize && (
+                    <p className="text-sm">Size: {selectedLead.companySize} employees</p>
+                  )}
+                </div>
+              </div>
+              
+              {enrichedLead && enrichedLead.id === selectedLead.id && (
+                <div className="mt-4 border-t pt-4">
+                  <h4 className="font-medium mb-2">Additional Information</h4>
+                  {enrichedLead.bio && (
+                    <div className="mb-2">
+                      <p className="text-sm text-gray-700">{enrichedLead.bio}</p>
+                    </div>
+                  )}
+                  {enrichedLead.skills && enrichedLead.skills.length > 0 && (
+                    <div className="mb-2">
+                      <p className="text-sm font-medium">Skills:</p>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {enrichedLead.skills.map((skill, index) => (
+                          <span key={index} className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded">
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              <div className="mt-6 flex justify-end gap-2">
+                <Button variant="outline">Save for Later</Button>
+                <Button 
+                  onClick={() => handleContactLead(selectedLead)}
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Initiating Contact...' : 'Contact Lead'}
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
