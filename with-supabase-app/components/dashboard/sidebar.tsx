@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutGrid, Settings, ChevronDown } from "lucide-react";
 
-export default function Sidebar() {
+export default function Sidebar({ agents = [] }: { agents?: any[] }) {
   const [expandedWorkspace, setExpandedWorkspace] = useState(true);
   const pathname = usePathname();
   
@@ -19,9 +19,9 @@ export default function Sidebar() {
       
       <div className="flex-1 overflow-y-auto">
         <Link 
-          href="/" 
+          href="/protected/dashboard" 
           className={`flex items-center gap-2 p-4 mx-2 rounded-lg ${
-            pathname === "/" ? "bg-[#231F20] text-white" : "hover:bg-gray-200"
+            pathname === "/protected/dashboard" ? "bg-[#231F20] text-white" : "hover:bg-gray-200"
           }`}
         >
           <LayoutGrid size={20} />
@@ -37,30 +37,24 @@ export default function Sidebar() {
               <div className="w-5 h-5 border border-gray-400 rounded flex items-center justify-center">
                 <span className="text-xs">📄</span>
               </div>
-              <span>Agent Workspace 1</span>
+              <span>Agent Workspace</span>
             </div>
           </div>
           
-          {expandedWorkspace && (
+          {expandedWorkspace && agents && agents.length > 0 && (
             <div className="ml-6 mt-2 space-y-4">
-              <Link 
-                href="/protected/agent/1" 
-                className={`flex items-center gap-2 p-2 rounded-lg ${
-                  pathname === "/protected/agent/1" ? "bg-[#231F20] text-white" : "hover:bg-gray-200"
-                }`}
-              >
-                <div className={`w-2 h-2 rounded-full ${pathname === "/protected/agent/1" ? "bg-white" : "bg-black"}`}></div>
-                <span>Agent 1</span>
-              </Link>
-              <Link 
-                href="/protected/agent/2" 
-                className={`flex items-center gap-2 p-2 rounded-lg ${
-                  pathname === "/protected/agent/2" ? "bg-[#231F20] text-white" : "hover:bg-gray-200"
-                }`}
-              >
-                <div className={`w-2 h-2 rounded-full ${pathname === "/protected/agent/2" ? "bg-white" : "bg-black"}`}></div>
-                <span>Agent 2</span>
-              </Link>
+              {agents.map(agent => (
+                <Link 
+                  key={agent.id}
+                  href={`/protected/agent/${agent.id}`}
+                  className={`flex items-center gap-2 p-2 rounded-lg ${
+                    pathname === `/protected/agent/${agent.id}` ? "bg-[#231F20] text-white" : "hover:bg-gray-200"
+                  }`}
+                >
+                  <div className={`w-2 h-2 rounded-full ${pathname === `/protected/agent/${agent.id}` ? "bg-white" : "bg-black"}`}></div>
+                  <span>Agent {agent.id.substring(0, 6)}</span>
+                </Link>
+              ))}
             </div>
           )}
         </div>

@@ -1,10 +1,12 @@
-import AgentWorkspace from "@/components/agents/agent-workspace";
 import { createClient } from "@/utils/supabase/server";
+import AgentWorkspace from "@/components/agents/agent-workspace";
 
+// Define the correct type for the page props
 type AgentPageProps = {
   params: {
     id: string;
   };
+  searchParams?: { [key: string]: string | string[] | undefined };
 };
 
 export default async function Page({ params }: AgentPageProps) {
@@ -13,7 +15,7 @@ export default async function Page({ params }: AgentPageProps) {
   
   const supabase = await createClient();
   
-  // Fetch agent data
+  // Fetch agent data - this query works the same for UUID
   const { data: agent } = await supabase
     .from('agents')
     .select('*')

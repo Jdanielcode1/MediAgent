@@ -1,6 +1,7 @@
 import { MoreVertical } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import Link from "next/link";
 
 export default function SalesTeamMonitor({ agents }: { agents: any[] }) {
   return (
@@ -15,10 +16,12 @@ export default function SalesTeamMonitor({ agents }: { agents: any[] }) {
         {agents.map((agent) => (
           <div key={agent.id} className="space-y-2">
             <div className="flex items-center justify-between">
-              <h3 className="font-medium">Agent {agent.id}</h3>
-              <Button variant="secondary" className="h-8 rounded-md bg-blue-400 text-white">
-                View
-              </Button>
+              <h3 className="font-medium">Agent {agent.id.substring(0, 8)}</h3>
+              <Link href={`/protected/agent/${agent.id}`}>
+                <Button variant="secondary" className="h-8 rounded-md bg-blue-400 text-white">
+                  View
+                </Button>
+              </Link>
             </div>
             <div className="space-y-1 text-sm">
               {agent.isTopPerformer && (

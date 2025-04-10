@@ -1,8 +1,7 @@
+
 import { Geist } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
-import Sidebar from "@/components/dashboard/sidebar";
-import Header from "@/components/dashboard/header";
 
 const geistSans = Geist({
   display: "swap",
@@ -10,7 +9,7 @@ const geistSans = Geist({
 });
 
 export const metadata = {
-  title: "MediAgent Dashboard",
+  title: "MediAgent",
   description: "AI Sales Agents for Medical Device Companies",
 };
 
@@ -28,15 +27,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <div className="flex h-screen">
-            <Sidebar />
-            <div className="flex-1 flex flex-col overflow-hidden">
-              <Header />
-              <main className="flex-1 overflow-y-auto p-6">
-                {children}
-              </main>
-            </div>
-          </div>
+          {children}
         </ThemeProvider>
       </body>
     </html>

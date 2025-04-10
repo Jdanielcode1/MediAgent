@@ -57,8 +57,8 @@ export default function AgentWorkspace({ agent }: { agent: any }) {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
-          <h1 className="text-3xl font-bold">Agent Workspace {agent.id}</h1>
-          <span className="text-sm text-orange-500">• Created Workspace 5/11/2023</span>
+          <h1 className="text-3xl font-bold">Agent Workspace</h1>
+          <span className="text-sm text-orange-500">• ID: {agent.id.substring(0, 8)}...</span>
         </div>
         
         <div className="flex gap-2">
