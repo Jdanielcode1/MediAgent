@@ -78,15 +78,20 @@ export async function POST(request: NextRequest) {
       sql: sqlQuery,
       size: body.limit || 10
     });
-
     // Log the full result object received from the client method
     console.log('Person search: Full result object from PDL client', JSON.stringify(result, null, 2));
 
     // Check the status code returned by the client method
     if (result.status !== 200 || !result.data || result.data.length === 0) {
-       console.log(`Person search: PDL status ${result.status}. No results found or error occurred, returning mock data.`);
-       const locationForMock = body?.location || 'Florida';
-       return NextResponse.json(getMockPersonData(locationForMock)); // Use helper
+      console.error('Error in person search route handler:', result.error || 'No results found');
+      // Try to get location from the request body for mock data context
+      let locationForMock = 'Florida'; // Default
+      try {
+        locationForMock = body?.location || 'Florida';
+      } catch (parseError) {
+        console.warn('Could not parse request body for mock data context.');
+      }
+      return NextResponse.json(getMockPersonData(locationForMock)); // Use helper
     }
 
     // Return the actual successful data from PDL

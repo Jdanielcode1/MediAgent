@@ -16,67 +16,21 @@ export class LeadGenerationService {
       const keywords = await this.parseQueryWithNLP(searchParams.query);
       console.log('searchLeads: Parsed keywords', keywords);
       
+      // Skip PDL API calls and directly use mock person generator
+      console.log('searchLeads: Bypassing PDL and using mock person generator');
+      
       try {
-        // First, search for companies
-        console.log('searchLeads: Searching companies');
-        const companiesResponse = await fetch('/api/lead-generation/company-search', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            industry: keywords.industries,
-            location: keywords.location,
-            companySize: keywords.companySize,
-            limit: 5
-          })
-        });
-        
-        console.log('searchLeads: Companies response status', companiesResponse.status);
-        
-        if (!companiesResponse.ok) {
-          const errorText = await companiesResponse.text();
-          console.error('Company search error:', errorText);
-          throw new Error('Failed to search companies');
-        }
-        
-        const companiesData = await companiesResponse.json();
-        const companies = companiesData.data || [];
-        console.log('searchLeads: Found companies', companies.length);
-        
-        // Then, search for people
-        const peopleResponse = await fetch('/api/lead-generation/person-search', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            titles: keywords.titles,
-            industry: keywords.industries,
-            location: keywords.location,
-            limit: 10
-          })
-        });
-        
-        if (!peopleResponse.ok) {
-          throw new Error('Failed to search people');
-        }
-        
-        const peopleData = await peopleResponse.json();
-        const people = peopleData.data || [];
-        
-        // Transform the results into leads
-        const leads = this.transformToLeads(people, companies, keywords);
+        // Generate mock people based on the original query
+        // We don't need to pass keywords here since generateMockPerson will get them
+        const leads = await this.generateMockPerson(searchParams.query);
         
         // Save leads to Supabase
         await this.saveLeadsToDatabase(leads);
         
         return leads;
-      } catch (error) {
-        console.error('Error in API calls:', error);
-        console.log('searchLeads: Falling back to mock data');
-        
-        // Return mock leads as fallback
+      } catch (mockError) {
+        console.error('Error generating mock person:', mockError);
+        // Final fallback to hardcoded mock data if everything else fails
         return [
           {
             id: "1",
@@ -388,6 +342,38 @@ export class LeadGenerationService {
       console.error('Error parsing query with NLP:', error);
       // Fall back to the basic parsing method
       return this.parseQuery(query);
+    }
+  }
+
+  async generateMockPerson(prompt: string): Promise<Lead[]> {
+    try {
+      console.log('Generating mock person with prompt:', prompt);
+      
+      // First, parse the query to get keywords for tags
+      const keywords = await this.parseQueryWithNLP(prompt);
+      console.log('Generated keywords for mock person:', keywords);
+      
+      const response = await fetch('/api/generate-mock-person', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ prompt })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to generate mock person');
+      }
+      
+      const result = await response.json();
+      console.log('Generated mock person result:', result);
+      
+      // The API returns data in an array format similar to PDL responses
+      // Pass the keywords to ensure tags are properly applied
+      return this.transformToLeads(result.data || [], [], keywords);
+    } catch (error) {
+      console.error('Error generating mock person:', error);
+      throw error;
     }
   }
 }
