@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutGrid, Settings, ChevronDown } from "lucide-react";
+import { LayoutGrid, Settings, ChevronDown, Database } from "lucide-react";
 
 interface Agent {
   id: string;
@@ -32,6 +32,16 @@ export default function Sidebar({ agents = [] }: { agents?: Agent[] }) {
         >
           <LayoutGrid size={20} />
           <span>Dashboard</span>
+        </Link>
+        
+        <Link 
+          href="/protected/leads" 
+          className={`flex items-center gap-2 p-4 mx-2 rounded-lg ${
+            pathname === "/protected/leads" ? "bg-[#231F20] text-white" : "hover:bg-gray-200"
+          }`}
+        >
+          <Database size={20} />
+          <span>Lead Database</span>
         </Link>
         
         <div className="p-4 font-medium mt-4">Workspaces</div>
