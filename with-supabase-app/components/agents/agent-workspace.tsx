@@ -85,8 +85,17 @@ export default function AgentWorkspace({ agent }: { agent: Agent }) {
       <div className="mb-6">
         <AgentHeader agent={agent} />
         
-        {/* Action buttons - moved from AgentHeader to here */}
+        {/* Navigation tabs */}
         <div className="mt-4 flex gap-2">
+          <Button 
+            variant={activeView === "search" ? "default" : "outline"} 
+            className="gap-2"
+            onClick={() => handleViewChange("search")}
+          >
+            <Search size={16} />
+            <span>Chat</span>
+          </Button>
+          
           <Button 
             variant={activeView === "createLead" ? "default" : "outline"} 
             className="gap-2"
