@@ -482,4 +482,45 @@ export class LeadGenerationService {
       throw error;
     }
   }
+
+  async addLeadToDatabase(lead: Lead): Promise<boolean> {
+    try {
+      // Generate a UUID for the id field
+      const id = crypto.randomUUID();
+      
+      // Insert the lead into the leads table with only the fields that exist in the database
+      const { error } = await this.supabase
+        .from('leads')
+        .insert([
+          {
+            id: id, // Add the generated UUID
+            name: lead.name,
+            title: lead.title,
+            company: lead.company,
+            location: lead.location,
+            email: lead.email,
+            phone: lead.phone,
+            linkedin_url: lead.linkedinUrl,
+            tags: lead.tags,
+            match_score: lead.matchScore,
+            status: 'new',
+            bio: lead.bio,
+            skills: lead.skills,
+            industry: lead.industry,
+            company_size: lead.companySize,
+            company_website: lead.companyWebsite,
+            company_linkedin: lead.companyLinkedin,
+            company_revenue: lead.companyRevenue,
+            agent_id: null, // This will be assigned to the current agent
+            created_at: new Date().toISOString()
+          }
+        ]);
+        
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error("Error adding lead to database:", error);
+      throw error;
+    }
+  }
 }

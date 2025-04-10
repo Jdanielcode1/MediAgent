@@ -2,11 +2,12 @@
 
 import { useEffect } from "react";
 import { useState } from "react";
-import { Linkedin, Building, Phone, Mail, User, MapPin, ChevronRight, Send, ExternalLink } from "lucide-react";
+import { Linkedin, Building, Phone, Mail, User, MapPin, ChevronRight, Send, ExternalLink, Plus } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import { LeadGenerationService } from "@/services/lead-generation-service";
 import { Textarea } from "../ui/textarea"
+import { useRouter } from "next/navigation";
 
 // Define Lead interface
 interface Lead {
@@ -84,7 +85,10 @@ export default function LeadResults({
   const [emailContent, setEmailContent] = useState<string>('');
   const [isGeneratingEmail, setIsGeneratingEmail] = useState(false);
   const [contactStatus, setContactStatus] = useState<{[key: string]: string}>({});
+  const [addingToDatabase, setAddingToDatabase] = useState<{[key: string]: boolean}>({});
+  const [addedToDatabase, setAddedToDatabase] = useState<{[key: string]: boolean}>({});
   const leadService = new LeadGenerationService();
+  const router = useRouter();
   
   // Use custom leads if provided, otherwise use mock leads
   const leads = customLeads || mockLeads;
@@ -159,6 +163,37 @@ export default function LeadResults({
     if (status === 'contacted') return 'Contacted';
     if (status === 'error') return 'Retry';
     return 'Contact';
+  };
+
+  const handleAddToDatabase = async (lead: Lead, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    // If already added, don't do anything
+    if (addedToDatabase[lead.id]) {
+      return;
+    }
+    
+    setAddingToDatabase({...addingToDatabase, [lead.id]: true});
+    
+    try {
+      // Call the service to add the lead to the database
+      await leadService.addLeadToDatabase(lead);
+      
+      // Mark this lead as added to the database
+      setAddedToDatabase({...addedToDatabase, [lead.id]: true});
+      
+      // Remove the alert popup
+      // alert(`${lead.name} has been added to your lead database!`);
+      
+      // Optionally, you could redirect to the lead database
+      // router.push('/protected/leads');
+    } catch (error) {
+      console.error("Error adding lead to database:", error);
+      // Replace the alert with a more subtle notification if needed
+      // You could use a toast notification here instead
+    } finally {
+      setAddingToDatabase({...addingToDatabase, [lead.id]: false});
+    }
   };
 
   return (
@@ -254,6 +289,17 @@ export default function LeadResults({
                   >
                     <Send className="h-4 w-4 mr-2" />
                     Draft Email
+                  </Button>
+                  
+                  <Button 
+                    variant={addedToDatabase[lead.id] ? "secondary" : "outline"}
+                    size="sm"
+                    onClick={(e) => handleAddToDatabase(lead, e)}
+                    disabled={addingToDatabase[lead.id] || addedToDatabase[lead.id]}
+                  >
+                    <Plus className={`h-4 w-4 mr-2 ${addedToDatabase[lead.id] ? "hidden" : ""}`} />
+                    {addingToDatabase[lead.id] ? "Adding..." : 
+                     addedToDatabase[lead.id] ? "Added ✓" : "Add Lead"}
                   </Button>
                   
                   <Button 
