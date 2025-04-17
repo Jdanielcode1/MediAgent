@@ -2,6 +2,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 
+
+// TODO: Add a video to the hero section
 export default function Hero() {
   return (
     <div className="relative overflow-hidden bg-white dark:bg-gray-950 py-24 sm:py-32">
