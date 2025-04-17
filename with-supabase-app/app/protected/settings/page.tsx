@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import SettingsForm from "@/components/settings/settings-form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { signOutAction } from "@/app/actions";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -61,7 +62,7 @@ export default async function SettingsPage() {
                   <p className="font-medium">{user.email}</p>
                 </div>
                 
-                <form action="/api/auth/signout" method="post">
+                <form action={signOutAction}>
                   <button 
                     type="submit"
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90 px-4 py-2 rounded-md text-sm font-medium"
